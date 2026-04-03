@@ -8,7 +8,6 @@ import { BehaviorParametersPicker } from "./BehaviorParametersPicker";
 import { validateValue } from "./parameters";
 import {
   hid_usage_from_page_and_id,
-  hid_usage_page_and_id_from_usage,
 } from "../hid-usages";
 
 export interface BehaviorBindingPickerProps {
