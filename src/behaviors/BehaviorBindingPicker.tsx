@@ -6,9 +6,7 @@ import {
 import { BehaviorBinding } from "@zmkfirmware/zmk-studio-ts-client/keymap";
 import { BehaviorParametersPicker } from "./BehaviorParametersPicker";
 import { validateValue } from "./parameters";
-import {
-  hid_usage_from_page_and_id,
-} from "../hid-usages";
+import { hid_usage_from_page_and_id } from "../hid-usages";
 
 export interface BehaviorBindingPickerProps {
   binding: BehaviorBinding;
@@ -113,30 +111,17 @@ const MEDIA_KEYS: QuickKey[] = [
   { label: "Bright-", page: 12, id: 0x70 },
 ];
 
-// ZMK modifier flags (left side)
-const ZMK_MOD_LCTL = 0x01;
-const ZMK_MOD_LSFT = 0x02;
-const ZMK_MOD_LALT = 0x04;
-const ZMK_MOD_LGUI = 0x08;
-
-const MOD_CHECKBOXES = [
-  { label: "Ctrl", flag: ZMK_MOD_LCTL },
-  { label: "Shift", flag: ZMK_MOD_LSFT },
-  { label: "Alt", flag: ZMK_MOD_LALT },
-  { label: "GUI", flag: ZMK_MOD_LGUI },
-];
-
 type CategoryId = "alpha" | "number" | "fkeys" | "special" | "mod" | "symbol" | "media" | "advanced";
 
 const CATEGORIES: { id: CategoryId; label: string; keys?: QuickKey[] }[] = [
-  { id: "alpha", label: "ABC", keys: ALPHA_KEYS },
-  { id: "number", label: "123", keys: NUMBER_KEYS },
-  { id: "fkeys", label: "Fn", keys: F_KEYS },
-  { id: "special", label: "Special", keys: SPECIAL_KEYS },
-  { id: "mod", label: "Mod", keys: MOD_KEYS },
-  { id: "symbol", label: "Symbol", keys: SYMBOL_KEYS },
-  { id: "media", label: "Media", keys: MEDIA_KEYS },
-  { id: "advanced", label: "Advanced" },
+  { id: "alpha", label: "\u5B57\u6BCD", keys: ALPHA_KEYS },
+  { id: "number", label: "\u6570\u5B57", keys: NUMBER_KEYS },
+  { id: "fkeys", label: "F\u952E", keys: F_KEYS },
+  { id: "special", label: "\u7279\u6B8A\u952E", keys: SPECIAL_KEYS },
+  { id: "mod", label: "\u4FEE\u9970\u952E", keys: MOD_KEYS },
+  { id: "symbol", label: "\u7B26\u53F7", keys: SYMBOL_KEYS },
+  { id: "media", label: "\u591A\u5A92\u4F53", keys: MEDIA_KEYS },
+  { id: "advanced", label: "\u9AD8\u7EA7" },
 ];
 
 export const BehaviorBindingPicker = ({
@@ -149,7 +134,6 @@ export const BehaviorBindingPicker = ({
   const [param1, setParam1] = useState<number | undefined>(binding.param1);
   const [param2, setParam2] = useState<number | undefined>(binding.param2);
   const [activeCategory, setActiveCategory] = useState<CategoryId>("alpha");
-  const [modFlags, setModFlags] = useState<number>(0);
 
   const metadata = useMemo(
     () => behaviors.find((b) => b.id == behaviorId)?.metadata,
@@ -200,44 +184,22 @@ export const BehaviorBindingPicker = ({
     setBehaviorId(binding.behaviorId);
     setParam1(binding.param1);
     setParam2(binding.param2);
-    // Extract modifier flags from current binding
-    if (binding.param1) {
-      const implicitMods = (binding.param1 >> 24) & 0xff;
-      setModFlags(implicitMods);
-    } else {
-      setModFlags(0);
-    }
   }, [binding]);
 
   const handleQuickKey = (key: QuickKey) => {
     if (!keyPressBehavior) return;
-    const baseUsage = hid_usage_from_page_and_id(key.page, key.id);
-    // Encode modifiers in upper byte of param1 (ZMK implicit modifier format)
-    const finalParam = modFlags > 0 ? ((modFlags << 24) | baseUsage) : baseUsage;
+    const usage = hid_usage_from_page_and_id(key.page, key.id);
     setBehaviorId(keyPressBehavior.id);
-    setParam1(finalParam);
+    setParam1(usage);
     setParam2(0);
   };
 
-  const toggleMod = (flag: number) => {
-    setModFlags((prev) => prev ^ flag);
-  };
-
-  const currentBaseUsage = useMemo(() => {
+  const currentUsage = useMemo(() => {
     if (!keyPressBehavior || behaviorId !== keyPressBehavior.id) return -1;
-    const p = param1 || 0;
-    return p & 0x00ffffff; // strip modifier bits
+    return param1 || 0;
   }, [behaviorId, param1, keyPressBehavior]);
 
   const activeCat = CATEGORIES.find((c) => c.id === activeCategory);
-
-  const modPreview = useMemo(() => {
-    const parts: string[] = [];
-    MOD_CHECKBOXES.forEach((m) => {
-      if (modFlags & m.flag) parts.push(m.label);
-    });
-    return parts.join(" + ");
-  }, [modFlags]);
 
   return (
     <div className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto">
@@ -258,37 +220,6 @@ export const BehaviorBindingPicker = ({
         ))}
       </div>
 
-      {/* Modifier checkboxes */}
-      {activeCategory !== "advanced" && activeCategory !== "mod" && (
-        <div className="flex items-center gap-4 px-3 py-2 bg-base-100 rounded-lg border border-base-300">
-          <span className="text-xs text-base-content/50 shrink-0">Modifier:</span>
-          {MOD_CHECKBOXES.map((m) => {
-            const isOn = (modFlags & m.flag) !== 0;
-            return (
-              <label
-                key={m.label}
-                className={`flex items-center gap-1.5 cursor-pointer text-xs select-none transition-colors ${
-                  isOn ? "text-primary font-semibold" : "text-base-content/60"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isOn}
-                  onChange={() => toggleMod(m.flag)}
-                  className="w-3.5 h-3.5 rounded accent-primary cursor-pointer"
-                />
-                {m.label}
-              </label>
-            );
-          })}
-          {modPreview && (
-            <span className="ml-auto text-xs text-primary font-medium">
-              {modPreview} + ...
-            </span>
-          )}
-        </div>
-      )}
-
       {/* Visual keyboard grid */}
       {activeCategory !== "advanced" && activeCat?.keys && (
         <div
@@ -302,7 +233,7 @@ export const BehaviorBindingPicker = ({
         >
           {activeCat.keys.map((key) => {
             const usage = hid_usage_from_page_and_id(key.page, key.id);
-            const isActive = currentBaseUsage === usage;
+            const isActive = currentUsage === usage;
             return (
               <button
                 key={usage}
@@ -333,9 +264,12 @@ export const BehaviorBindingPicker = ({
       {/* Advanced mode */}
       {activeCategory === "advanced" && (
         <div className="flex flex-col gap-3">
+          <p className="text-xs text-base-content/50">
+            {"\u9AD8\u7EA7\u6A21\u5F0F\u652F\u6301\u5FEB\u6377\u952E\u7EC4\u5408\u3001\u5C42\u5207\u6362\u3001\u84DD\u7259\u3001\u5B8F\u7B49\u6240\u6709 ZMK \u884C\u4E3A"}
+          </p>
           <div>
             <label className="text-xs text-base-content/50 block mb-1">
-              Behavior
+              {"\u884C\u4E3A\u7C7B\u578B"}
             </label>
             <select
               value={behaviorId}
