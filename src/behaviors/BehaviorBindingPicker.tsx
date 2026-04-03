@@ -26,15 +26,12 @@ function validateBinding(
   ) {
     return true;
   }
-
   let matchingSet = metadata.find((s) =>
     validateValue(layerIds, param1, s.param1)
   );
-
   if (!matchingSet) {
     return false;
   }
-
   return validateValue(layerIds, param2, matchingSet.param2);
 }
 
@@ -49,27 +46,28 @@ function makeUsage(page: number, id: number): number {
   return (page << 16) | id;
 }
 
+// ZMK modifier bit flags for param2
+const MOD_FLAGS = [
+  { label: "Ctrl", shortLabel: "C", left: 0x01, right: 0x10 },
+  { label: "Shift", shortLabel: "S", left: 0x02, right: 0x20 },
+  { label: "Alt", shortLabel: "A", left: 0x04, right: 0x40 },
+  { label: "GUI", shortLabel: "G", left: 0x08, right: 0x80 },
+];
+
 const ALPHA_KEYS: QuickKey[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   .split("")
   .map((c, i) => ({ label: c, page: 7, id: 4 + i }));
 
 const NUMBER_KEYS: QuickKey[] = [
-  { label: "1", page: 7, id: 0x1e },
-  { label: "2", page: 7, id: 0x1f },
-  { label: "3", page: 7, id: 0x20 },
-  { label: "4", page: 7, id: 0x21 },
-  { label: "5", page: 7, id: 0x22 },
-  { label: "6", page: 7, id: 0x23 },
-  { label: "7", page: 7, id: 0x24 },
-  { label: "8", page: 7, id: 0x25 },
-  { label: "9", page: 7, id: 0x26 },
-  { label: "0", page: 7, id: 0x27 },
+  { label: "1", page: 7, id: 0x1e }, { label: "2", page: 7, id: 0x1f },
+  { label: "3", page: 7, id: 0x20 }, { label: "4", page: 7, id: 0x21 },
+  { label: "5", page: 7, id: 0x22 }, { label: "6", page: 7, id: 0x23 },
+  { label: "7", page: 7, id: 0x24 }, { label: "8", page: 7, id: 0x25 },
+  { label: "9", page: 7, id: 0x26 }, { label: "0", page: 7, id: 0x27 },
 ];
 
 const F_KEYS: QuickKey[] = Array.from({ length: 12 }, (_, i) => ({
-  label: `F${i + 1}`,
-  page: 7,
-  id: 0x3a + i,
+  label: `F${i + 1}`, page: 7, id: 0x3a + i,
 }));
 
 const SPECIAL_KEYS: QuickKey[] = [
@@ -105,39 +103,26 @@ const MOD_KEYS: QuickKey[] = [
 ];
 
 const SYMBOL_KEYS: QuickKey[] = [
-  { label: "-", page: 7, id: 0x2d },
-  { label: "=", page: 7, id: 0x2e },
-  { label: "[", page: 7, id: 0x2f },
-  { label: "]", page: 7, id: 0x30 },
-  { label: "\\", page: 7, id: 0x31 },
-  { label: ";", page: 7, id: 0x33 },
-  { label: "'", page: 7, id: 0x34 },
-  { label: "`", page: 7, id: 0x35 },
-  { label: ",", page: 7, id: 0x36 },
-  { label: ".", page: 7, id: 0x37 },
+  { label: "-", page: 7, id: 0x2d }, { label: "=", page: 7, id: 0x2e },
+  { label: "[", page: 7, id: 0x2f }, { label: "]", page: 7, id: 0x30 },
+  { label: "\\", page: 7, id: 0x31 }, { label: ";", page: 7, id: 0x33 },
+  { label: "'", page: 7, id: 0x34 }, { label: "`", page: 7, id: 0x35 },
+  { label: ",", page: 7, id: 0x36 }, { label: ".", page: 7, id: 0x37 },
   { label: "/", page: 7, id: 0x38 },
 ];
 
 const MEDIA_KEYS: QuickKey[] = [
-  { label: "\uD83D\uDD0A+", sub: "\u97F3\u91CF+", page: 12, id: 0xe9 },
-  { label: "\uD83D\uDD0A-", sub: "\u97F3\u91CF-", page: 12, id: 0xea },
-  { label: "\uD83D\uDD07", sub: "\u9759\u97F3", page: 12, id: 0xe2 },
-  { label: "\u23ED", sub: "\u4E0B\u4E00\u66F2", page: 12, id: 0xb5 },
-  { label: "\u23EE", sub: "\u4E0A\u4E00\u66F2", page: 12, id: 0xb6 },
-  { label: "\u23EF", sub: "\u64AD\u653E/\u6682\u505C", page: 12, id: 0xcd },
-  { label: "\u2600+", sub: "\u4EAE\u5EA6+", page: 12, id: 0x6f },
-  { label: "\u2600-", sub: "\u4EAE\u5EA6-", page: 12, id: 0x70 },
+  { label: "Vol+", sub: "\u97F3\u91CF+", page: 12, id: 0xe9 },
+  { label: "Vol-", sub: "\u97F3\u91CF-", page: 12, id: 0xea },
+  { label: "Mute", sub: "\u9759\u97F3", page: 12, id: 0xe2 },
+  { label: "Next", sub: "\u4E0B\u4E00\u66F2", page: 12, id: 0xb5 },
+  { label: "Prev", sub: "\u4E0A\u4E00\u66F2", page: 12, id: 0xb6 },
+  { label: "Play", sub: "\u64AD\u653E/\u6682\u505C", page: 12, id: 0xcd },
+  { label: "Bri+", sub: "\u4EAE\u5EA6+", page: 12, id: 0x6f },
+  { label: "Bri-", sub: "\u4EAE\u5EA6-", page: 12, id: 0x70 },
 ];
 
-type CategoryId =
-  | "alpha"
-  | "number"
-  | "fkeys"
-  | "special"
-  | "mod"
-  | "symbol"
-  | "media"
-  | "advanced";
+type CategoryId = "alpha" | "number" | "fkeys" | "special" | "mod" | "symbol" | "media" | "advanced";
 
 interface Category {
   id: CategoryId;
@@ -153,7 +138,7 @@ const CATEGORIES: Category[] = [
   { id: "mod", label: "\u4FEE\u9970\u952E", keys: MOD_KEYS },
   { id: "symbol", label: "\u7B26\u53F7", keys: SYMBOL_KEYS },
   { id: "media", label: "\u591A\u5A92\u4F53", keys: MEDIA_KEYS },
-  { id: "advanced", label: "\u9AD8\u7EA7\u8BBE\u7F6E" },
+  { id: "advanced", label: "\u9AD8\u7EA7" },
 ];
 
 export const BehaviorBindingPicker = ({
@@ -166,6 +151,8 @@ export const BehaviorBindingPicker = ({
   const [param1, setParam1] = useState<number | undefined>(binding.param1);
   const [param2, setParam2] = useState<number | undefined>(binding.param2);
   const [activeCategory, setActiveCategory] = useState<CategoryId>("alpha");
+  const [modifiers, setModifiers] = useState<number>(0);
+  const [useRightMods, setUseRightMods] = useState(false);
 
   const metadata = useMemo(
     () => behaviors.find((b) => b.id == behaviorId)?.metadata,
@@ -173,14 +160,10 @@ export const BehaviorBindingPicker = ({
   );
 
   const sortedBehaviors = useMemo(
-    () =>
-      [...behaviors].sort((a, b) =>
-        a.displayName.localeCompare(b.displayName)
-      ),
+    () => [...behaviors].sort((a, b) => a.displayName.localeCompare(b.displayName)),
     [behaviors]
   );
 
-  // Find "key press" behavior
   const keyPressBehavior = useMemo(() => {
     return behaviors.find(
       (b) =>
@@ -197,15 +180,9 @@ export const BehaviorBindingPicker = ({
     ) {
       return;
     }
-
     if (!metadata) {
-      console.error(
-        "Can't find metadata for the selected behaviorId",
-        behaviorId
-      );
       return;
     }
-
     if (
       validateBinding(
         metadata,
@@ -231,9 +208,24 @@ export const BehaviorBindingPicker = ({
   const handleQuickKey = (key: QuickKey) => {
     if (!keyPressBehavior) return;
     const usage = makeUsage(key.page, key.id);
-    setBehaviorId(keyPressBehavior.id);
-    setParam1(usage);
-    setParam2(0);
+
+    if (modifiers > 0) {
+      // Use the modifier + key press behavior pattern
+      // In ZMK, modified key presses encode modifiers in the upper bits of param1
+      // Format: ((modifiers & 0xFF) << 24) | usage
+      const modifiedUsage = ((modifiers & 0xff) << 24) | usage;
+      setBehaviorId(keyPressBehavior.id);
+      setParam1(modifiedUsage);
+      setParam2(0);
+    } else {
+      setBehaviorId(keyPressBehavior.id);
+      setParam1(usage);
+      setParam2(0);
+    }
+  };
+
+  const toggleModifier = (flag: number) => {
+    setModifiers((prev) => prev ^ flag);
   };
 
   const currentUsage = useMemo(() => {
@@ -243,8 +235,18 @@ export const BehaviorBindingPicker = ({
 
   const activeCat = CATEGORIES.find((c) => c.id === activeCategory);
 
+  // Build modifier summary string
+  const modSummary = useMemo(() => {
+    const parts: string[] = [];
+    MOD_FLAGS.forEach((m) => {
+      const flag = useRightMods ? m.right : m.left;
+      if (modifiers & flag) parts.push(m.label);
+    });
+    return parts.length > 0 ? parts.join(" + ") + " + " : "";
+  }, [modifiers, useRightMods]);
+
   return (
-    <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto p-1">
+    <div className="flex flex-col gap-2 max-h-[45vh] overflow-y-auto">
       {/* Category tabs */}
       <div className="flex gap-1 flex-wrap">
         {CATEGORIES.map((cat) => (
@@ -254,7 +256,7 @@ export const BehaviorBindingPicker = ({
             className={`px-2.5 py-1 text-[11px] rounded-md transition-all border ${
               activeCategory === cat.id
                 ? "bg-primary text-primary-content border-primary font-semibold"
-                : "bg-base-100 hover:bg-base-300 text-base-content/70 border-base-300"
+                : "bg-base-100 hover:bg-base-200 text-base-content/70 border-base-300"
             }`}
           >
             {cat.label}
@@ -262,42 +264,90 @@ export const BehaviorBindingPicker = ({
         ))}
       </div>
 
+      {/* Modifier checkboxes - show for non-advanced categories */}
+      {activeCategory !== "advanced" && (
+        <div className="flex items-center gap-3 px-1 py-1.5 bg-base-100 rounded-lg border border-base-300">
+          <span className="text-[11px] text-base-content/50 whitespace-nowrap">
+            \u4FEE\u9970\u952E\u7EC4\u5408:
+          </span>
+          <div className="flex gap-2 flex-wrap">
+            {MOD_FLAGS.map((m) => {
+              const flag = useRightMods ? m.right : m.left;
+              const isOn = (modifiers & flag) !== 0;
+              return (
+                <label
+                  key={m.label}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded cursor-pointer text-[11px] border transition-all ${
+                    isOn
+                      ? "bg-primary/15 border-primary text-primary font-semibold"
+                      : "border-transparent text-base-content/60 hover:text-base-content"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isOn}
+                    onChange={() => toggleModifier(flag)}
+                    className="w-3 h-3 accent-primary"
+                  />
+                  {m.label}
+                </label>
+              );
+            })}
+          </div>
+          <label className="flex items-center gap-1 ml-auto text-[10px] text-base-content/40 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useRightMods}
+              onChange={() => {
+                setModifiers(0);
+                setUseRightMods(!useRightMods);
+              }}
+              className="w-3 h-3"
+            />
+            \u53F3\u4FA7
+          </label>
+        </div>
+      )}
+
+      {/* Modifier preview */}
+      {modSummary && activeCategory !== "advanced" && (
+        <div className="text-[11px] text-primary font-medium px-1">
+          \u5F53\u524D\u7EC4\u5408: {modSummary}\u300A\u70B9\u51FB\u4E0B\u65B9\u6309\u952E\u300B
+        </div>
+      )}
+
       {/* Visual keyboard grid */}
       {activeCategory !== "advanced" && activeCat?.keys && (
         <div
           className={`grid gap-1 ${
             activeCategory === "alpha"
-              ? "grid-cols-[repeat(auto-fill,minmax(36px,1fr))]"
+              ? "grid-cols-[repeat(auto-fill,minmax(34px,1fr))]"
               : activeCategory === "media"
-              ? "grid-cols-[repeat(auto-fill,minmax(64px,1fr))]"
-              : "grid-cols-[repeat(auto-fill,minmax(48px,1fr))]"
+              ? "grid-cols-[repeat(auto-fill,minmax(58px,1fr))]"
+              : "grid-cols-[repeat(auto-fill,minmax(44px,1fr))]"
           }`}
         >
           {activeCat.keys.map((key) => {
             const usage = makeUsage(key.page, key.id);
-            const isActive = currentUsage === usage;
+            const isActive = currentUsage === usage || currentUsage === (((modifiers & 0xff) << 24) | usage);
             return (
               <button
                 key={usage}
                 onClick={() => handleQuickKey(key)}
                 title={key.sub || key.label}
                 className={`flex flex-col items-center justify-center rounded-md text-xs transition-all duration-100 border ${
-                  key.sub
-                    ? "min-h-[40px] py-1"
-                    : "min-h-[36px]"
+                  key.sub ? "min-h-[38px] py-0.5" : "min-h-[34px]"
                 } ${
                   isActive
-                    ? "bg-primary text-primary-content border-primary font-bold shadow-sm scale-105"
-                    : "bg-base-100 hover:bg-base-200 text-base-content border-base-300 hover:border-primary/50 hover:-translate-y-px hover:shadow-sm active:scale-95"
+                    ? "bg-primary text-primary-content border-primary font-bold shadow-sm"
+                    : "bg-base-100 hover:bg-base-200 text-base-content border-base-300 hover:border-primary/40 hover:-translate-y-px active:scale-95"
                 }`}
               >
-                <span className="leading-none font-medium">{key.label}</span>
+                <span className="leading-none font-medium text-[12px]">{key.label}</span>
                 {key.sub && (
-                  <span
-                    className={`text-[9px] leading-none mt-0.5 ${
-                      isActive ? "text-primary-content/70" : "text-base-content/40"
-                    }`}
-                  >
+                  <span className={`text-[8px] leading-none mt-0.5 ${
+                    isActive ? "text-primary-content/70" : "text-base-content/40"
+                  }`}>
                     {key.sub}
                   </span>
                 )}
