@@ -38,61 +38,123 @@ function validateBinding(
   return validateValue(layerIds, param2, matchingSet.param2);
 }
 
-// Visual keyboard categories with Chinese labels
-const KEY_CATEGORIES: Record<string, Array<{ label: string; usage: number }>> = {
-  "\u5B57\u6BCD": [
-    { label: "A", usage: 0x70004 }, { label: "B", usage: 0x70005 }, { label: "C", usage: 0x70006 },
-    { label: "D", usage: 0x70007 }, { label: "E", usage: 0x70008 }, { label: "F", usage: 0x70009 },
-    { label: "G", usage: 0x7000a }, { label: "H", usage: 0x7000b }, { label: "I", usage: 0x7000c },
-    { label: "J", usage: 0x7000d }, { label: "K", usage: 0x7000e }, { label: "L", usage: 0x7000f },
-    { label: "M", usage: 0x70010 }, { label: "N", usage: 0x70011 }, { label: "O", usage: 0x70012 },
-    { label: "P", usage: 0x70013 }, { label: "Q", usage: 0x70014 }, { label: "R", usage: 0x70015 },
-    { label: "S", usage: 0x70016 }, { label: "T", usage: 0x70017 }, { label: "U", usage: 0x70018 },
-    { label: "V", usage: 0x70019 }, { label: "W", usage: 0x7001a }, { label: "X", usage: 0x7001b },
-    { label: "Y", usage: 0x7001c }, { label: "Z", usage: 0x7001d },
-  ],
-  "\u6570\u5B57": [
-    { label: "1", usage: 0x7001e }, { label: "2", usage: 0x7001f }, { label: "3", usage: 0x70020 },
-    { label: "4", usage: 0x70021 }, { label: "5", usage: 0x70022 }, { label: "6", usage: 0x70023 },
-    { label: "7", usage: 0x70024 }, { label: "8", usage: 0x70025 }, { label: "9", usage: 0x70026 },
-    { label: "0", usage: 0x70027 },
-  ],
-  "\u529F\u80FD\u952E": [
-    { label: "F1", usage: 0x7003a }, { label: "F2", usage: 0x7003b }, { label: "F3", usage: 0x7003c },
-    { label: "F4", usage: 0x7003d }, { label: "F5", usage: 0x7003e }, { label: "F6", usage: 0x7003f },
-    { label: "F7", usage: 0x70040 }, { label: "F8", usage: 0x70041 }, { label: "F9", usage: 0x70042 },
-    { label: "F10", usage: 0x70043 }, { label: "F11", usage: 0x70044 }, { label: "F12", usage: 0x70045 },
-  ],
-  "\u7279\u6B8A\u952E": [
-    { label: "Esc", usage: 0x70029 }, { label: "Tab", usage: 0x7002b }, { label: "\u7A7A\u683C", usage: 0x7002c },
-    { label: "\u56DE\u8F66", usage: 0x70028 }, { label: "\u9000\u683C", usage: 0x7002a }, { label: "Del", usage: 0x7004c },
-    { label: "Ins", usage: 0x70049 }, { label: "Home", usage: 0x7004a }, { label: "End", usage: 0x7004d },
-    { label: "PgUp", usage: 0x7004b }, { label: "PgDn", usage: 0x7004e },
-    { label: "\u2191", usage: 0x70052 }, { label: "\u2193", usage: 0x70051 },
-    { label: "\u2190", usage: 0x70050 }, { label: "\u2192", usage: 0x7004f },
-    { label: "PrtSc", usage: 0x70046 }, { label: "Caps", usage: 0x70039 },
-  ],
-  "\u4FEE\u9970\u952E": [
-    { label: "L Ctrl", usage: 0x700e0 }, { label: "L Shift", usage: 0x700e1 },
-    { label: "L Alt", usage: 0x700e2 }, { label: "L GUI", usage: 0x700e3 },
-    { label: "R Ctrl", usage: 0x700e4 }, { label: "R Shift", usage: 0x700e5 },
-    { label: "R Alt", usage: 0x700e6 }, { label: "R GUI", usage: 0x700e7 },
-  ],
-  "\u7B26\u53F7": [
-    { label: "-", usage: 0x7002d }, { label: "=", usage: 0x7002e },
-    { label: "[", usage: 0x7002f }, { label: "]", usage: 0x70030 },
-    { label: "\\", usage: 0x70031 }, { label: ";", usage: 0x70033 },
-    { label: "'", usage: 0x70034 }, { label: ",", usage: 0x70036 },
-    { label: ".", usage: 0x70037 }, { label: "/", usage: 0x70038 },
-    { label: "`", usage: 0x70035 },
-  ],
-  "\u591A\u5A92\u4F53": [
-    { label: "\u97F3\u91CF+", usage: 0x0c00e9 }, { label: "\u97F3\u91CF-", usage: 0x0c00ea },
-    { label: "\u9759\u97F3", usage: 0x0c00e2 }, { label: "\u4E0B\u4E00\u66F2", usage: 0x0c00b5 },
-    { label: "\u4E0A\u4E00\u66F2", usage: 0x0c00b6 }, { label: "\u64AD\u653E/\u6682\u505C", usage: 0x0c00cd },
-    { label: "\u4EAE\u5EA6+", usage: 0x0c006f }, { label: "\u4EAE\u5EA6-", usage: 0x0c0070 },
-  ],
-};
+interface QuickKey {
+  label: string;
+  sub?: string;
+  page: number;
+  id: number;
+}
+
+function makeUsage(page: number, id: number): number {
+  return (page << 16) | id;
+}
+
+const ALPHA_KEYS: QuickKey[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  .split("")
+  .map((c, i) => ({ label: c, page: 7, id: 4 + i }));
+
+const NUMBER_KEYS: QuickKey[] = [
+  { label: "1", page: 7, id: 0x1e },
+  { label: "2", page: 7, id: 0x1f },
+  { label: "3", page: 7, id: 0x20 },
+  { label: "4", page: 7, id: 0x21 },
+  { label: "5", page: 7, id: 0x22 },
+  { label: "6", page: 7, id: 0x23 },
+  { label: "7", page: 7, id: 0x24 },
+  { label: "8", page: 7, id: 0x25 },
+  { label: "9", page: 7, id: 0x26 },
+  { label: "0", page: 7, id: 0x27 },
+];
+
+const F_KEYS: QuickKey[] = Array.from({ length: 12 }, (_, i) => ({
+  label: `F${i + 1}`,
+  page: 7,
+  id: 0x3a + i,
+}));
+
+const SPECIAL_KEYS: QuickKey[] = [
+  { label: "Esc", page: 7, id: 0x29 },
+  { label: "Tab", page: 7, id: 0x2b },
+  { label: "Space", sub: "\u7A7A\u683C", page: 7, id: 0x2c },
+  { label: "Enter", sub: "\u56DE\u8F66", page: 7, id: 0x28 },
+  { label: "Bksp", sub: "\u9000\u683C", page: 7, id: 0x2a },
+  { label: "Del", sub: "\u5220\u9664", page: 7, id: 0x4c },
+  { label: "Ins", page: 7, id: 0x49 },
+  { label: "Home", page: 7, id: 0x4a },
+  { label: "End", page: 7, id: 0x4d },
+  { label: "PgUp", page: 7, id: 0x4b },
+  { label: "PgDn", page: 7, id: 0x4e },
+  { label: "\u2191", sub: "Up", page: 7, id: 0x52 },
+  { label: "\u2193", sub: "Down", page: 7, id: 0x51 },
+  { label: "\u2190", sub: "Left", page: 7, id: 0x50 },
+  { label: "\u2192", sub: "Right", page: 7, id: 0x4f },
+  { label: "PrtSc", page: 7, id: 0x46 },
+  { label: "Caps", page: 7, id: 0x39 },
+  { label: "NumLk", page: 7, id: 0x53 },
+];
+
+const MOD_KEYS: QuickKey[] = [
+  { label: "L Ctrl", page: 7, id: 0xe0 },
+  { label: "L Shift", page: 7, id: 0xe1 },
+  { label: "L Alt", page: 7, id: 0xe2 },
+  { label: "L GUI", sub: "Win/Cmd", page: 7, id: 0xe3 },
+  { label: "R Ctrl", page: 7, id: 0xe4 },
+  { label: "R Shift", page: 7, id: 0xe5 },
+  { label: "R Alt", page: 7, id: 0xe6 },
+  { label: "R GUI", sub: "Win/Cmd", page: 7, id: 0xe7 },
+];
+
+const SYMBOL_KEYS: QuickKey[] = [
+  { label: "-", page: 7, id: 0x2d },
+  { label: "=", page: 7, id: 0x2e },
+  { label: "[", page: 7, id: 0x2f },
+  { label: "]", page: 7, id: 0x30 },
+  { label: "\\", page: 7, id: 0x31 },
+  { label: ";", page: 7, id: 0x33 },
+  { label: "'", page: 7, id: 0x34 },
+  { label: "`", page: 7, id: 0x35 },
+  { label: ",", page: 7, id: 0x36 },
+  { label: ".", page: 7, id: 0x37 },
+  { label: "/", page: 7, id: 0x38 },
+];
+
+const MEDIA_KEYS: QuickKey[] = [
+  { label: "\uD83D\uDD0A+", sub: "\u97F3\u91CF+", page: 12, id: 0xe9 },
+  { label: "\uD83D\uDD0A-", sub: "\u97F3\u91CF-", page: 12, id: 0xea },
+  { label: "\uD83D\uDD07", sub: "\u9759\u97F3", page: 12, id: 0xe2 },
+  { label: "\u23ED", sub: "\u4E0B\u4E00\u66F2", page: 12, id: 0xb5 },
+  { label: "\u23EE", sub: "\u4E0A\u4E00\u66F2", page: 12, id: 0xb6 },
+  { label: "\u23EF", sub: "\u64AD\u653E/\u6682\u505C", page: 12, id: 0xcd },
+  { label: "\u2600+", sub: "\u4EAE\u5EA6+", page: 12, id: 0x6f },
+  { label: "\u2600-", sub: "\u4EAE\u5EA6-", page: 12, id: 0x70 },
+];
+
+type CategoryId =
+  | "alpha"
+  | "number"
+  | "fkeys"
+  | "special"
+  | "mod"
+  | "symbol"
+  | "media"
+  | "advanced";
+
+interface Category {
+  id: CategoryId;
+  label: string;
+  keys?: QuickKey[];
+}
+
+const CATEGORIES: Category[] = [
+  { id: "alpha", label: "\u5B57\u6BCD", keys: ALPHA_KEYS },
+  { id: "number", label: "\u6570\u5B57", keys: NUMBER_KEYS },
+  { id: "fkeys", label: "F\u952E", keys: F_KEYS },
+  { id: "special", label: "\u7279\u6B8A\u952E", keys: SPECIAL_KEYS },
+  { id: "mod", label: "\u4FEE\u9970\u952E", keys: MOD_KEYS },
+  { id: "symbol", label: "\u7B26\u53F7", keys: SYMBOL_KEYS },
+  { id: "media", label: "\u591A\u5A92\u4F53", keys: MEDIA_KEYS },
+  { id: "advanced", label: "\u9AD8\u7EA7\u8BBE\u7F6E" },
+];
 
 export const BehaviorBindingPicker = ({
   binding,
@@ -103,8 +165,7 @@ export const BehaviorBindingPicker = ({
   const [behaviorId, setBehaviorId] = useState(binding.behaviorId);
   const [param1, setParam1] = useState<number | undefined>(binding.param1);
   const [param2, setParam2] = useState<number | undefined>(binding.param2);
-  const [activeCategory, setActiveCategory] = useState("\u5B57\u6BCD");
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<CategoryId>("alpha");
 
   const metadata = useMemo(
     () => behaviors.find((b) => b.id == behaviorId)?.metadata,
@@ -112,24 +173,21 @@ export const BehaviorBindingPicker = ({
   );
 
   const sortedBehaviors = useMemo(
-    () => behaviors.sort((a, b) => a.displayName.localeCompare(b.displayName)),
+    () =>
+      [...behaviors].sort((a, b) =>
+        a.displayName.localeCompare(b.displayName)
+      ),
     [behaviors]
   );
 
-  // Find the "key press" behavior ID
-  const keyPressBehaviorId = useMemo(() => {
-    const kp = behaviors.find(
+  // Find "key press" behavior
+  const keyPressBehavior = useMemo(() => {
+    return behaviors.find(
       (b) =>
         b.displayName.toLowerCase().includes("key") &&
         b.displayName.toLowerCase().includes("press")
     );
-    return kp?.id;
   }, [behaviors]);
-
-  const isKeyPressBehavior = useMemo(() => {
-    if (!keyPressBehaviorId) return false;
-    return behaviorId === keyPressBehaviorId;
-  }, [behaviorId, keyPressBehaviorId]);
 
   useEffect(() => {
     if (
@@ -170,76 +228,95 @@ export const BehaviorBindingPicker = ({
     setParam2(binding.param2);
   }, [binding]);
 
-  // Quick key press handler for visual keyboard
-  const handleQuickKey = (usage: number) => {
-    if (keyPressBehaviorId !== undefined) {
-      setBehaviorId(keyPressBehaviorId);
-      setParam1(usage);
-      setParam2(0);
-    }
+  const handleQuickKey = (key: QuickKey) => {
+    if (!keyPressBehavior) return;
+    const usage = makeUsage(key.page, key.id);
+    setBehaviorId(keyPressBehavior.id);
+    setParam1(usage);
+    setParam2(0);
   };
 
+  const currentUsage = useMemo(() => {
+    if (!keyPressBehavior || behaviorId !== keyPressBehavior.id) return -1;
+    return param1 || 0;
+  }, [behaviorId, param1, keyPressBehavior]);
+
+  const activeCat = CATEGORIES.find((c) => c.id === activeCategory);
+
   return (
-    <div className="flex flex-col gap-3 max-h-[45vh] overflow-y-auto">
+    <div className="flex flex-col gap-2 max-h-[40vh] overflow-y-auto p-1">
       {/* Category tabs */}
       <div className="flex gap-1 flex-wrap">
-        {Object.keys(KEY_CATEGORIES).map((cat) => (
+        {CATEGORIES.map((cat) => (
           <button
-            key={cat}
-            onClick={() => {
-              setActiveCategory(cat);
-              setShowAdvanced(false);
-            }}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 ${
-              activeCategory === cat && !showAdvanced
-                ? "bg-primary text-primary-content shadow-sm"
-                : "bg-base-100 hover:bg-base-300 text-base-content"
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`px-2.5 py-1 text-[11px] rounded-md transition-all border ${
+              activeCategory === cat.id
+                ? "bg-primary text-primary-content border-primary font-semibold"
+                : "bg-base-100 hover:bg-base-300 text-base-content/70 border-base-300"
             }`}
           >
-            {cat}
+            {cat.label}
           </button>
         ))}
-        <button
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 ${
-            showAdvanced
-              ? "bg-primary text-primary-content shadow-sm"
-              : "bg-base-100 hover:bg-base-300 text-base-content"
-          }`}
-        >
-          \u9AD8\u7EA7
-        </button>
       </div>
 
       {/* Visual keyboard grid */}
-      {!showAdvanced && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(52px,1fr))] gap-1.5">
-          {KEY_CATEGORIES[activeCategory]?.map((key) => (
-            <button
-              key={key.usage}
-              onClick={() => handleQuickKey(key.usage)}
-              className={`h-10 rounded-lg text-xs font-medium transition-all duration-100 ${
-                isKeyPressBehavior && param1 === key.usage
-                  ? "bg-primary text-primary-content shadow-sm ring-2 ring-primary ring-offset-1 ring-offset-base-200"
-                  : "bg-base-100 hover:bg-base-300 hover:-translate-y-0.5 hover:shadow text-base-content border border-base-300"
-              }`}
-            >
-              {key.label}
-            </button>
-          ))}
+      {activeCategory !== "advanced" && activeCat?.keys && (
+        <div
+          className={`grid gap-1 ${
+            activeCategory === "alpha"
+              ? "grid-cols-[repeat(auto-fill,minmax(36px,1fr))]"
+              : activeCategory === "media"
+              ? "grid-cols-[repeat(auto-fill,minmax(64px,1fr))]"
+              : "grid-cols-[repeat(auto-fill,minmax(48px,1fr))]"
+          }`}
+        >
+          {activeCat.keys.map((key) => {
+            const usage = makeUsage(key.page, key.id);
+            const isActive = currentUsage === usage;
+            return (
+              <button
+                key={usage}
+                onClick={() => handleQuickKey(key)}
+                title={key.sub || key.label}
+                className={`flex flex-col items-center justify-center rounded-md text-xs transition-all duration-100 border ${
+                  key.sub
+                    ? "min-h-[40px] py-1"
+                    : "min-h-[36px]"
+                } ${
+                  isActive
+                    ? "bg-primary text-primary-content border-primary font-bold shadow-sm scale-105"
+                    : "bg-base-100 hover:bg-base-200 text-base-content border-base-300 hover:border-primary/50 hover:-translate-y-px hover:shadow-sm active:scale-95"
+                }`}
+              >
+                <span className="leading-none font-medium">{key.label}</span>
+                {key.sub && (
+                  <span
+                    className={`text-[9px] leading-none mt-0.5 ${
+                      isActive ? "text-primary-content/70" : "text-base-content/40"
+                    }`}
+                  >
+                    {key.sub}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* Advanced: original behavior selector */}
-      {showAdvanced && (
+      {/* Advanced mode */}
+      {activeCategory === "advanced" && (
         <div className="flex flex-col gap-2">
           <div>
-            <label className="text-xs text-base-content/60 block mb-1">
-              \u884C\u4E3A
+            <label className="text-[11px] text-base-content/50 block mb-1">
+              \u884C\u4E3A\u7C7B\u578B
             </label>
             <select
               value={behaviorId}
-              className="h-8 rounded-lg w-full text-sm"
+              className="h-8 rounded-md w-full text-sm bg-base-100 border border-base-300"
               onChange={(e) => {
                 setBehaviorId(parseInt(e.target.value));
                 setParam1(0);
